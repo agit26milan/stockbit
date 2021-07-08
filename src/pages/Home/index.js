@@ -4,20 +4,20 @@ import {connect} from 'react-redux'
 import { getAutoCompleteList, getMovieList, resetMoviee } from '../../redux/home/actions'
 import {Container, Row, Col} from 'reactstrap'
 import SearchComponent from '../../components/Search'
-import { filterName, isBottomPage } from '../../utils/commons'
+import { filterName, handleParamUrl, isBottomPage, splitUrl } from '../../utils/commons'
 import NoImage from '../../assets/images/noimage.png'
 import ModalWithClose from '../../components/ModalCustom'
 import AutoComplete from './AutoComplete'
 import { autoCompleteArray } from './constant'
 const Home = (props) => {
     const {home, resetMovieHandle, history } = props
-    const [params, setParams] = useState({
+    const [params] = useState({
         page: 1,
-        s: 'Batman',
+        s: null,
         apikey: 'faf7e5bb'
     })
     const [autoCompleteValue, setAutoCompleteValue] = useState([])
-    const [querySearch, setQuerySearch] = useState('Batman')
+    const [querySearch, setQuerySearch] = useState('')
     const {getMovieListSaga} = props
     const [realPage, setRealPage] = useState(1)
     const [showModal, setShowModal] = useState(false)
@@ -27,13 +27,20 @@ const Home = (props) => {
         const {name, value} = event.target
         if (event.charCode === 13) {
             setShowAutoComplete(false)
-            if(params.s !== value) {
-                resetMovieHandle()
+            const newParam = {
+                ...params,
+                s: value,
+                page: null,
+                apikey: null
             }
-            setParams({...params, [name]: value, page: 1})
+            history.push({
+                pathname: 'home',
+                search: handleParamUrl('', newParam)
+            })
             if(realPage > 1) {
-               setRealPage(1)
-            }
+                setRealPage(1)
+             }
+   
           }
     }
 
@@ -62,8 +69,6 @@ const Home = (props) => {
         }
     }
 
-    
-
     const toggleModal = () => setShowModal((prevState) => !prevState)
     const onImageClick = (detail) => {
         setDetailMovie(detail)
@@ -88,15 +93,38 @@ const Home = (props) => {
     }
 
     const autoCompleteClick = (value) => {
-        resetMovieHandle()
-        setQuerySearch(value)
-        setParams({...params, s: value, page: 1})
-        setShowAutoComplete(false)
+        const newParam = {...params, s: value}
+        setRealPage(1)
+        history.push({
+            pathname: 'home',
+            search: handleParamUrl('', newParam)
+        })
     }
 
+
+    console.log(params, 'saktiono')
+
     useEffect(() => {
-        getMovieListSaga(params)
-    },[JSON.stringify(params)])
+        const urlObj = splitUrl(history.location.search, params)
+        setShowAutoComplete(false)
+        if(history.location.search) {
+            if(params.s !== urlObj.s) {
+                resetMovieHandle()
+            }
+            if(urlObj.s) {
+                console.log('masukman2 ')
+                const newParam = {...params, s: urlObj.s, page: 1}
+                getMovieListSaga(newParam)
+                setQuerySearch(urlObj.s)
+            }
+        } else {
+            history.push({
+                pathname: 'home',
+                search: '?s=Batman'
+            })
+            setQuerySearch('Batman')
+        }
+    }, [JSON.stringify(history.location)])
 
     useEffect(() => {
         document.addEventListener('scroll', checkBottom)
@@ -106,7 +134,8 @@ const Home = (props) => {
     }, [])
 
     useEffect(() => {
-        setParams({...params, page: realPage})
+        const urlObj = splitUrl(history.location.search, params)
+        getMovieListSaga({...params, page: realPage, s: urlObj.s})
     }, [realPage])
 
     return (

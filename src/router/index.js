@@ -4,9 +4,10 @@ import { Redirect } from 'react-router-dom'
 
 
 export const allRoutes = [
-    { path: "/", exact: true, component: Home, },
+    { path: "/home", exact: true, component: Home, },
     { path: "/movie-detail", component: MovieDetail },
-    { path: '*', component: () => <Redirect to='/' /> }
+    { path: '/', component: () => <Redirect to='/home' /> },
+    { path: '*', component: () => <Redirect to='/home' /> }
 
 
 ]
